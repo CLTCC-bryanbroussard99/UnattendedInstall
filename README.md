@@ -1,9 +1,11 @@
 # UnattendedInstall
-This is being created to create a iso file to automate OS installs
+This tutors you on the process to create a iso file to automate OS installs
 
 What you'll need
 
-In order to create a new Windows ISO, you're first going to need a clean installation of Windows. You can do this on real hardware or on a virtual machine. I'm using VirtualBox.
+A clean installation of Windows.
+You can do this on real hardware or on a virtual machine.
+We're using VirtualBox. https://www.virtualbox.org/wiki/Downloads
 
 Step 1: Setting up the Windows installation
 
