@@ -6,6 +6,7 @@ What you'll need
 A clean installation of Windows.
 You can do this on real hardware or on a virtual machine.
 We're using VirtualBox. https://www.virtualbox.org/wiki/Downloads
+Packet Tracer is not available through winget. You will need to install it separately. - https://skillsforall.com/resources/lab-downloads (login required(
 
 Step 1: Setting up the Windows installation
 
