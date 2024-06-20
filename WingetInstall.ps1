@@ -5,6 +5,7 @@ Set-ExecutionPolicy unrestricted
 # URL for package searches - https://winget.run/pkg/Microsoft
 
 # verify winget is upgraded (Already installed in Windows 11)
+Write-Output "Upgrading winget if available"
 winget upgrade "App Installer" --silent --accept-source-agreements
 
 # array of programs to install
