@@ -49,8 +49,8 @@ $programs =@(
     '7zip.7zip', # 7-zip - Free and open source file archiver with a high compression ratio.
 
     # Communication
-    'Microsoft.Teams -e', #
-    'tomlm.electron-outlook-365 -e' #
+    'Microsoft.Teams', #
+    'tomlm.electron-outlook-365' #
 )
 
 Foreach ($program in $programs)
