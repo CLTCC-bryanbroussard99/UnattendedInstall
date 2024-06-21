@@ -68,8 +68,10 @@ Foreach ($program in $programs)
     }
 
 #Upgrade All
+Write-Output 'Verifying all programs are updated. Updating if not fully updated'
 winget upgrade --all
 <#
 # set Execution policy back to restricted
 Set-ExecutionPolicy restricted
 #>
+Write-Output 'Install and Updating Finished'
