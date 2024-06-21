@@ -10,7 +10,7 @@
 Set-ExecutionPolicy unrestricted
 #>
 
-# Winget Documentation - https://learn.microsoft.com/en-us/windows/package-manager/winget/install
+# Winget Documentation - https://learn.microsoft.com/en-us/windows/package-manager/winget/
 # URL for package searches - https://winget.run
 
 # verify winget is upgraded (Already installed in Windows 11)
