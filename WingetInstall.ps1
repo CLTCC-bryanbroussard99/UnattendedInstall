@@ -55,7 +55,7 @@ $programs =@(
 
 Foreach ($program in $programs)
     {
-    winget install -e --id $program -h --silent --accept-package-agreements --accept-source-agreements
+    winget install $program --silent --accept-package-agreements --accept-source-agreements
     }
 
 #Upgrade All
