@@ -19,7 +19,7 @@ winget upgrade "App Installer" --silent --accept-source-agreements
 
 # array of programs to install
 $programs =@(   
-    # Browsers
+    # Browsers 
     'Brave.Brave', # Secure, Fast & Private Web Browser with Adblocker
     'Mozilla.Firefox', # Mozilla Firefox - Only non-profit-backed browser that is secure, private & fast.
     'Google.Chrome', # Google Chrome - A more simple, secure, and faster web browser than ever, with Google’s smarts built-in.
