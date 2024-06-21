@@ -14,8 +14,8 @@ Set-ExecutionPolicy unrestricted
 # URL for package searches - https://winget.run
 
 # verify winget is upgraded (Already installed in Windows 11)
-Write-Output "Upgrading winget if available"
-winget upgrade "App Installer" --silent --accept-source-agreements
+Write-Output 'Upgrading winget if available'
+winget upgrade 'App Installer' --silent --accept-source-agreements
 
 # array of programs to install
 $programs =@(   
@@ -63,12 +63,13 @@ $programs =@(
 
 Foreach ($program in $programs)
     {
-        Write-Output "Attempting to install", $program
+        Write-Output 'Attempting to install ->', $program
         winget install -e --id $program -h --silent --accept-package-agreements --accept-source-agreements
     }
 
 #Upgrade All
 winget upgrade --all
-
+<#
 # set Execution policy back to restricted
 Set-ExecutionPolicy restricted
+#>
