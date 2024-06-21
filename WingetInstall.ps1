@@ -74,4 +74,4 @@ winget upgrade --all
 # set Execution policy back to restricted
 Set-ExecutionPolicy restricted
 #>
-Write-Output 'Install and Updating Finished'
+Write-Output 'Installation and Updating Finished'
