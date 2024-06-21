@@ -1,8 +1,17 @@
+<# This results in the current script being passed to a new powershell process in Administrator mode (if current User has access to Administrator mode and the script is not launched as Administrator)
+ if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))  
+{  
+  $arguments = "& '" +$myinvocation.mycommand.definition + "'"
+  Start-Process powershell -Verb runAs -ArgumentList $arguments
+  Break
+}
+
 # set Execution policy to unrestricted to allow installs
 Set-ExecutionPolicy unrestricted
+#>
 
 # Winget Documentation - https://learn.microsoft.com/en-us/windows/package-manager/winget/install
-# URL for package searches - https://winget.run/pkg/Microsoft
+# URL for package searches - https://winget.run
 
 # verify winget is upgraded (Already installed in Windows 11)
 Write-Output "Upgrading winget if available"
@@ -20,7 +29,6 @@ $programs =@(
     'ApacheFriends.Xampp.8.2', # XAMPP is an easy to install Apache distribution containing MariaDB, PHP and Perl.
     'AnyDeskSoftwareGmbH.AnyDesk','CodecGuide.K-LiteCodecPack.Standard', # K-Lite Codec Pack Standard - is a collection of DirectShow filters, VFW/ACM codecs, and tools. Codecs and DirectShow filters are needed for encoding and decoding audio and video formats. The K-Lite Codec Pack is designed as a user-friendly solution for playing all your audio and movie files. With the K-Lite Codec Pack you should be able to play all the popular audio and video formats and even several less common formats.
     'dotPDNLLC.paintdotnet', # Paint.NET - is image and photo editing software for PCs that run Windows.
-    'Easeware.DriverEasy', #
     'Famatech.AdvancedIPScanner', # Advanced IP Scanner - shows all network devices, gives you access to shared folders, and can even remotely switch computers off.
     'Git.Git', # Git - is a distributed version control system that tracks changes in any set of computer files, usually used for coordinating work among programmer
     'GitHub.GitHubDesktop', #
@@ -55,7 +63,8 @@ $programs =@(
 
 Foreach ($program in $programs)
     {
-    winget install -e --id $program -h --silent --accept-package-agreements --accept-source-agreements
+        Write-Output "Attempting to install", $program
+        winget install -e --id $program -h --silent --accept-package-agreements --accept-source-agreements
     }
 
 #Upgrade All
