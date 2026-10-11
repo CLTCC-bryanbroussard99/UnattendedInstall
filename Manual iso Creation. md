@@ -1,0 +1,18 @@
+When creating a manual image, you will use a technician machine to create a bootable environment, build your reference system in a Virtual Machine (VM), and then capture it.
+
+The Manual ISO/WIM Creation Workflow
+
+[Create Clean OS VM] ➔ [Enter Audit Mode] ➔ [Mass Install Software] ➔ [Sysprep & Generalize] ➔ [Capture to WIM]
+1. Start with a Clean Base: Create a new Virtual Machine (Hyper-V, VMware, or VirtualBox) and boot it using a standard, untouched Windows ISO.
+2. Enter Audit Mode Immediately: When the Windows installation finishes and reaches the initial setup screen (OOBE/Region Selection), do not create a user account. Instead, press Ctrl + Shift + F3. The VM will reboot into the built-in Administrator account.
+3. Mass Install Software: Disconnect the internet to prevent Windows Update from pulling background AppX updates. Use Chocolatey or your silent MSI scripts to install all standard desktop applications (Chrome, VLC, Office, etc.).
+4. Run Sysprep: Open the Sysprep GUI (located at C:\Windows\System32\Sysprep\sysprep.exe), choose Generalize, select OOBE, and set the shutdown option to Shutdown.
+5. Capture the WIM: Boot the VM into a Windows PE (WinPE) environment. Use the DISM tool to capture the C:\ drive into a custom.wim or install.wim file:cmd
+dism /Capture-Image /ImageFile:D:\install.wim /CaptureDir:C:\ /Name:"Windows11GoldenImage"
+Use code with caution.
+6. Inject into the ISO: Use a tool like AnyBurn or OSCDIMG to open your original Windows ISO, swap out the default install.wim in the sources folder with your newly captured install.wim, and save it as a new bootable ISO.
+
+Pro-Tips for Manual WIM Building
+
+• Use Snapshots: Take a VM snapshot right after entering Audit Mode but before installing software. If Sysprep fails later, you can roll back instantly without re-installing Windows.
+• Keep Internet Disconnected: Keep the network adapter disconnected in the VM during your software installations. This prevents Microsoft Store apps from auto-updating in the background, which is the primary cause of manual image breakage.
