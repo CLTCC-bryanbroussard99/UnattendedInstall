@@ -1,58 +1,57 @@
-AI Mode
-All
-Images
-Videos
-News
-Maps
-Shopping
-Books
-Flights
-Finance
-Yes, using winget before running Sysprep frequently causes issues and can break the generalization process.
+Using winget before running Sysprep frequently causes issues and can break the generalization process.
+
 Why Winget Causes Sysprep Failures
 User-Specific Installs: Many applications or MSIX/AppX packages installed via winget install exclusively for the active user context (such as the built-in Administrator) rather than provisioning globally for all users. 
 
-GitHub
- +1
+
 Sysprep Validation Error: Sysprep fails or hangs if it detects AppX or MSIX packages installed for a specific user profile that have not been provisioned system-wide (0x80073cf2 or validation errors).
 Winget/Store Updates: Updating Microsoft.DesktopAppInstaller or built-in Microsoft Store apps via winget before running sysprep /generalize commonly triggers fatal deployment blocks. 
 
-Spiceworks Community
- +1
+
 Best Practices for Imaging with Winget
+
 Avoid running winget packages that deploy as per-user MSIX/AppX files during your reference image build.
 If you must use winget, ensure installations are forced system-wide, or perform application installations via traditional enterprise installers (MSI/EXE) in Audit Mode rather than using user-context winget commands.
 Clean up any updated AppX/Store packages or remove the Desktop App Installer package if Sysprep throws an app-package validation error, noting that winget can be reinstalled post-deployment. 
-If you're hitting a specific error code or log entry in setupact.log, share it so I can help you troubleshoot the exact package causing the failure.
-
-
-
 
 To mass install applications before running Sysprep without breaking the image, you should use enterprise-grade deployment tools that install software system-wide (per-machine) rather than per-user.
 The most reliable alternatives and methods for mass installation in a reference image include:
+
 1. Ninite Pro or Silent Command-Line Scripts
+
 Instead of winget, you can use Ninite Pro or a batch/PowerShell script that triggers the silent switches of official enterprise installers (MSI or EXE).
 Why it works: MSI installers naturally deploy to Program Files and register for all users, which Sysprep fully supports.
 How to use: Boot your reference machine into Audit Mode (Ctrl+Shift+F3 at the OOBE screen) and run a script utilizing silent switches (e.g., setup.exe /silent or msiexec /i package.msi /qn).
+
 2. Chocolatey (Open-Source Package Manager)
 Chocolatey is a command-line package manager for Windows similar to winget, but it is much safer for Sysprep because it prioritizes traditional machine-wide installers over modern UWP/AppX packages.
 Why it works: It primarily fetches standard .msi and .exe installers and runs them with silent arguments under the system context.
 How to use: Install Chocolatey in Audit Mode, then mass-install your suite with a single command:
+
 powershell
 choco install googlechrome vlc 7zip git -y
-Use code with caution.
+
 3. PowerShell App Deployment Toolkit (PSADT)
+
 PSADT is a highly customizable framework used by enterprise administrators to bundle and mass-deploy applications.
+
 Why it works: It allows you to chain multiple installations together, handle dependencies, and force strict per-machine install rules.
 How to use: You create a master deployment script using their syntax and execute it in Audit Mode to install your software catalog sequentially.
+
 4. DISM (Deployment Image Servicing and Management)
+
 If you want to inject applications directly into your Windows image offline (without even booting the machine), you can use DISM.
+
 Why it works: It bypasses the live Windows environment entirely, meaning there is zero risk of user-profile corruption or app ownership conflicts.
+
 How to use: This is primarily used for provisioning AppX/MSIX packages properly so they apply to all future users, or for installing features-on-demand and updates:
 powershell
+
 Dism /Image:C:\mount\windows /Add-ProvisionedAppxPackage /PackagePath:C:\apps\package.msix
 Use code with caution.
+
 Crucial Golden Rules for Mass Installing
+
 Always use Audit Mode: Do not go through the initial Windows setup wizard to install your software. Press Ctrl+Shift+F3 at the region selection screen to log into the built-in Administrator account.
 Avoid the Microsoft Store: Do not launch or let the Microsoft Store update apps in the background while installing your software, as this is the #1 cause of Sysprep breaks.
 Are you managing these deployments using a specific framework like MDT (Microsoft Deployment Toolkit), SCCM/MECM, or are you building a standalone ISO/WIM manually? Knowing your setup will help narrow down the best tool.
