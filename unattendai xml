@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<unattend xmlns="urn:schemas-microsoft-com:unattend">
+    <!-- 1. Specialize Pass: Configures computer-specific settings -->
+    <settings pass="specialize">
+        <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://microsoft.com" xmlns:xsi="http://w3.org">
+            <ComputerName>*</ComputerName> <!-- Auto-generates a random computer name -->
+            <TimeZone>Eastern Standard Time</TimeZone> <!-- Change to your preferred Time Zone -->
+        </component>
+    </settings>
+
+    <!-- 2. OOBE System Pass: Automates the setup screens -->
+    <settings pass="oobeSystem">
+        <component name="Microsoft-Windows-International-Core" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://microsoft.com" xmlns:xsi="http://w3.org">
+            <InputLocale>en-US</InputLocale>
+            <SystemLocale>en-US</SystemLocale>
+            <UILanguage>en-US</UILanguage>
+            <UserLocale>en-US</UserLocale>
+        </component>
+        <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://microsoft.com" xmlns:xsi="http://w3.org">
+            <OOBE>
+                <HideEULAPage>true</HideEULAPage>
+                <HideLocalAccountScreen>false</HideLocalAccountScreen> <!-- Stops here to let you name the final user account -->
+                <HideOnlineAccountScreen>true</HideOnlineAccountScreen>
+                <HideWirelessSetupInOOBE>true</HideWirelessSetupInOOBE>
+                <NetworkLocation>Work</NetworkLocation>
+                <ProtectYourPC>1</ProtectYourPC> <!-- Express/Recommended security settings -->
+                <SkipMachineOOBE>false</SkipMachineOOBE>
+                <SkipUserOOBE>false</SkipUserOOBE>
+            </OOBE>
+            
+            <!-- Optional: Uncomment this section if you want to force-create a local administrator account automatically -->
+            <!--
+            <UserAccounts>
+                <LocalAccounts>
+                    <LocalAccount wcm:action="add">
+                        <Password>
+                            <Value>Password123!</Value>
+                            <PlainText>true</PlainText>
+                        </Password>
+                        <Description>Local Admin Account</Description>
+                        <DisplayName>Administrator</DisplayName>
+                        <Group>Administrators</Group>
+                        <Name>Admin</Name>
+                    </LocalAccount>
+                </LocalAccounts>
+            </UserAccounts>
+            -->
+        </component>
+    </settings>
+</unattend>
