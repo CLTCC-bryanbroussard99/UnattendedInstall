@@ -1,0 +1,243 @@
+Here is the exact PowerShell script to automate your app installations using Chocolatey, followed by the DISM and OSCDIMG command workflow to create your WinPE capture media and compile your final bootable ISO.
+
+Part 1: The Software Mass-Installation Script (Run in Audit Mode)
+
+Run this script inside your Virtual Machine after pressing Ctrl + Shift + F3. It automatically installs Chocolatey, forces a system-wide installation context, installs your selected apps silently, and cleans up the environment.
+powershell
+# 1. Bypass Execution Policy for the current session
+Set-ExecutionPolicy Bypass -Scope Process -Force
+
+# 2. Install Chocolatey (System-Wide Package Manager)
+[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org'))
+
+# 3. Refresh environment variables so 'choco' is recognized immediately
+Import-Module "$env:ProgramData\chocolatey\helpers\chocolateyProfile.psm1"
+Update-SessionEnvironment
+
+# 4. Define your software list (Change these names to match your needs)
+# Note: These install machine-wide to Program Files, making them Sysprep-safe.
+$Apps = @(
+    "googlechrome",
+    "vlc",
+    "7zip",
+    "notepadplusplus",
+    "git"
+)
+
+# 5. Mass install the applications silently
+Write-Host "Starting mass application installation..." -ForegroundColor Cyan
+foreach ($App in $Apps) {
+    choco install $App -y --no-progress
+}
+
+# 6. Optional: Clean up Chocolatey telemetry/caches to keep the WIM small
+choco optimize
+Write-Host "Installation complete! You are now ready to run Sysprep." -ForegroundColor Green
+Use code with caution.
+
+Part 2: Building WinPE & Capturing Your Custom ISO
+
+You must run these steps on your Technician Machine (your main PC, not the VM) using the Deployment and Imaging Tools Environment command prompt (run as Administrator), which is installed via the Windows ADK.
+
+Step 1: Create a Bootable WinPE Media (To Capture the VM)
+
+Run these commands to build the file structure and create a bootable WinPE ISO. You will attach this ISO to your VM to boot into a command-line environment and capture its drive.
+cmd
+:: 1. Create the WinPE workspace files in a temporary folder
+copype amd64 C:\WinPE_amd64
+
+:: 2. Create a bootable WinPE ISO file
+MakeWinMedia /ISO C:\WinPE_amd64 C:\WinPE_capture.iso
+Use code with caution.
+
+Step 2: Capture the VM's Drive to a WIM File
+
+Boot your VM from the WinPE_capture.iso after running Sysprep. Once the WinPE command prompt opens, use DISM to capture your generalized Windows installation.
+cmd
+:: Capture the OS drive (usually C: or D: in WinPE) into an install.wim file
+dism /Capture-Image /ImageFile:E:\install.wim /CaptureDir:C:\ /Name:"Windows11_Golden_Image" /Description:"Custom Master Image 2026" /Compress:max
+Use code with caution.
+(Note: Ensure E:\ points to a secondary virtual disk, a network share, or a flash drive with enough space to store the captured WIM file).
+
+Step 3: Compile Your Final Custom OS ISO
+
+Once you have your install.wim, copy an original Windows installation ISO's extracted files to your technician machine (e.g., C:\OS_Files). Replace C:\OS_Files\sources\install.wim with your newly captured file, and run oscdimg to build your final deployment ISO:
+cmd
+:: Create the final bootable installation ISO containing your custom software
+oscdimg -m -o -u2 -udfver102 -bootdata:2#p0,e,bC:\OS_Files\boot\etfsboot.com#pEF,e,bC:\OS_Files\efi\microsoft\boot\efisys.bin C:\OS_Files C:\Custom_Windows_Setup.iso
+Use code with caution.
+Would you like assistance setting up an Unattend.xml (answer file) to automate the OOBE setup screens (like region, keyboard, and privacy settings) for when you deploy this final ISO?
+
+You said: yes
+
+yes
+8:19 AM
+An Unattend.xml (or answer file) is the key to fully automating the deployment process. Placing this file in the correct location allows Windows to skip privacy prompts, region selection, and account creation during the Out-of-Box Experience (OOBE).
+Here is a fully functional, production-ready Unattend.xml template, along with instructions on how to use it.
+
+Step 1: Create the Unattend.xml File
+
+Copy the XML block below, paste it into a text editor (like Notepad), and save it exactly as unattend.xml (make sure it doesn't end in .txt).
+xml
+<?xml version="1.0" encoding="utf-8"?>
+<unattend xmlns="urn:schemas-microsoft-com:unattend">
+    <!-- 1. Specialize Pass: Configures computer-specific settings -->
+    <settings pass="specialize">
+        <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://microsoft.com" xmlns:xsi="http://w3.org">
+            <ComputerName>*</ComputerName> <!-- Auto-generates a random computer name -->
+            <TimeZone>Eastern Standard Time</TimeZone> <!-- Change to your preferred Time Zone -->
+        </component>
+    </settings>
+
+    <!-- 2. OOBE System Pass: Automates the setup screens -->
+    <settings pass="oobeSystem">
+        <component name="Microsoft-Windows-International-Core" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://microsoft.com" xmlns:xsi="http://w3.org">
+            <InputLocale>en-US</InputLocale>
+            <SystemLocale>en-US</SystemLocale>
+            <UILanguage>en-US</UILanguage>
+            <UserLocale>en-US</UserLocale>
+        </component>
+        <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://microsoft.com" xmlns:xsi="http://w3.org">
+            <OOBE>
+                <HideEULAPage>true</HideEULAPage>
+                <HideLocalAccountScreen>false</HideLocalAccountScreen> <!-- Stops here to let you name the final user account -->
+                <HideOnlineAccountScreen>true</HideOnlineAccountScreen>
+                <HideWirelessSetupInOOBE>true</HideWirelessSetupInOOBE>
+                <NetworkLocation>Work</NetworkLocation>
+                <ProtectYourPC>1</ProtectYourPC> <!-- Express/Recommended security settings -->
+                <SkipMachineOOBE>false</SkipMachineOOBE>
+                <SkipUserOOBE>false</SkipUserOOBE>
+            </OOBE>
+            
+            <!-- Optional: Uncomment this section if you want to force-create a local administrator account automatically -->
+            <!--
+            <UserAccounts>
+                <LocalAccounts>
+                    <LocalAccount wcm:action="add">
+                        <Password>
+                            <Value>Password123!</Value>
+                            <PlainText>true</PlainText>
+                        </Password>
+                        <Description>Local Admin Account</Description>
+                        <DisplayName>Administrator</DisplayName>
+                        <Group>Administrators</Group>
+                        <Name>Admin</Name>
+                    </LocalAccount>
+                </LocalAccounts>
+            </UserAccounts>
+            -->
+        </component>
+    </settings>
+</unattend>
+Use code with caution.
+
+Step 2: How to Implement the File
+
+You have two options for where to place this file, depending on how you want to bake it into your manual imaging pipeline:
+
+Option A: Inject it during Sysprep (Recommended for WIM Capture)
+
+If you want the answer file hardcoded directly inside your custom image so it triggers no matter how the WIM is deployed:
+1. Copy the unattend.xml file into your Virtual Machine's C:\Windows\System32\Sysprep\ directory while still in Audit Mode.
+2. Run Sysprep via the command line, pointing directly to the file:cmd
+net stop tiledatamodelsvc /y
+C:\Windows\System32\Sysprep\sysprep.exe /generalize /oobe /shutdown /unattend:C:\Windows\System32\Sysprep\unattend.xml
+Use code with caution.
+3. Once the VM shuts down, boot to WinPE and capture your image as detailed in the previous step.
+
+Option B: Root of the Installation Media (Easiest for ISOs)
+
+If you already captured your install.wim and don't want to re-capture it, you can place the answer file directly onto your installation media:
+1. Open your extracted ISO file directory on your technician machine (e.g., C:\OS_Files\).
+2. Paste the unattend.xml file directly into the root folder (C:\OS_Files\unattend.xml).
+3. Re-compile the ISO using the oscdimg tool provided in Part 2. The Windows installer will automatically search the root of the drive for this file and apply it during setup.
+Would you like to add automated FirstLogonCommands to the answer file to do things like automatically change registry keys, activate Windows, or clean up temporary files immediately upon the first user login?
+
+You said: yes
+
+yes
+8:19 AM
+To automate actions immediately after the first user logs in, you can use the FirstLogonCommands section. This is ideal for activating Windows, running cleanup scripts, or tweaking registry keys without manual intervention.
+
+Step 1: Updated Unattend.xml (With FirstLogonCommands)
+
+This updated template includes an automated section that sequentially runs commands right as the desktop loads for the first time.
+Replace your existing file content with this layout:
+xml
+<?xml version="1.0" encoding="utf-8"?>
+<unattend xmlns="urn:schemas-microsoft-com:unattend">
+    <!-- 1. Specialize Pass: Configures computer-specific settings -->
+    <settings pass="specialize">
+        <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://microsoft.com" xmlns:xsi="http://w3.org">
+            <ComputerName>*</ComputerName>
+            <TimeZone>Eastern Standard Time</TimeZone> <!-- Change to your local Time Zone -->
+        </component>
+    </settings>
+
+    <!-- 2. OOBE System Pass: Automates setup screens and first logon -->
+    <settings pass="oobeSystem">
+        <component name="Microsoft-Windows-International-Core" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://microsoft.com" xmlns:xsi="http://w3.org">
+            <InputLocale>en-US</InputLocale>
+            <SystemLocale>en-US</SystemLocale>
+            <UILanguage>en-US</UILanguage>
+            <UserLocale>en-US</UserLocale>
+        </component>
+        <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://microsoft.com" xmlns:xsi="http://w3.org">
+            <OOBE>
+                <HideEULAPage>true</HideEULAPage>
+                <HideLocalAccountScreen>false</HideLocalAccountScreen>
+                <HideOnlineAccountScreen>true</HideOnlineAccountScreen>
+                <HideWirelessSetupInOOBE>true</HideWirelessSetupInOOBE>
+                <NetworkLocation>Work</NetworkLocation>
+                <ProtectYourPC>1</ProtectYourPC>
+                <SkipMachineOOBE>false</SkipMachineOOBE>
+                <SkipUserOOBE>false</SkipUserOOBE>
+            </OOBE>
+            
+            <!-- First Logon Commands: Executes sequentially upon first desktop load -->
+            <FirstLogonCommands>
+                <SynchronousCommand wcm:action="add">
+                    <Order>1</Order>
+                    <Description>Disable Windows Consumer Features (Prevents Candy Crush/TikTok shortcuts)</Description>
+                    <CommandLine>reg add "HKLM\Software\Policies\Microsoft\Windows\CloudContent" /v DisableWindowsConsumerFeatures /t REG_DWORD /d 1 /f</CommandLine>
+                </SynchronousCommand>
+                <SynchronousCommand wcm:action="add">
+                    <Order>2</Order>
+                    <Description>Attempt Windows Activation Silently</Description>
+                    <CommandLine>cscript //B C:\Windows\System32\slmgr.vbs /ato</CommandLine>
+                </SynchronousCommand>
+                <SynchronousCommand wcm:action="add">
+                    <Order>3</Order>
+                    <Description>Run custom post-setup cleanup script (Optional)</Description>
+                    <CommandLine>powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\Windows\Setup\Scripts\PostLogon.ps1</CommandLine>
+                </SynchronousCommand>
+            </FirstLogonCommands>
+        </component>
+    </settings>
+</unattend>
+Use code with caution.
+
+Step 2: Advanced Customization (Using the PostLogon.ps1 Script)
+
+Notice how Order 3 calls a script located at C:\Windows\Setup\Scripts\PostLogon.ps1.
+Instead of cluttering your XML with long string commands, creating a master PowerShell script file inside your image before you run Sysprep is highly recommended. While in Audit Mode, create that directory path and drop a cleanup script like this into it:
+powershell
+# C:\Windows\Setup\Scripts\PostLogon.ps1
+
+# 1. Force check and trigger pending developer/system updates
+wuauclt /detectnow /updatenow
+
+# 2. Delete temporary installation logs/Chocolatey setup caches
+if (Test-Path "C:\ProgramData\chocolatey\lib-bak") { Remove-Item "C:\ProgramData\chocolatey\lib-bak" -Recycle -Force }
+Remove-Item "C:\Windows\TEMP\*" -Recycle -Force -ErrorAction SilentlyContinue
+
+# 3. Optimize the hard drive or SSD layout post-deployment
+Optimize-Volume -DriveLetter C -Defrag -Verbose
+Use code with caution.
+
+Important Execution Notes
+
+• Privilege Level: FirstLogonCommands run elevated in the system/administrator context, so they bypass standard user execution blocks.
+• Timing: They run before the user interacts with the desktop. If a script requires a user profile directory to exist (like modifying a specific desktop wallpaper path), make sure you add a slight start sleep delay (Start-Sleep -Seconds 5) at the top of your custom .ps1 file.
+Do you need help injecting a specific product key (KMS, MAK, or Retail) into this answer file so Windows registers immediately upon hitting the network?
